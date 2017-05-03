@@ -24,13 +24,7 @@ COMPARE_METHOD = COMPARE_METHODS[0]
 histograms = {}
 
 categorised_hist = {}
-
-
-
-
 # NOTE: a categorisation is of the form { category : [file_name, file_name, file_name], ... }
-
-
 
 #dir_path = os.path.dirname(os.path.realpath(__file__))
 dir_path = "C:\\Unnamed\\scripts\\test_images\\"
@@ -41,21 +35,6 @@ for f in files:
 	image = cv2.imread(dir_path + f);
 
 	image = remove_lines(image)
-	
-	#cv2.imshow(f,image)
-	#cv2.waitKey(0)
-#	img = cv2.bitwise_not(thresh)
-	#cv2.imshow(f,img)
-
-#	kernel = np.ones((1,1), np.uint8)
-
-#	img = cv2.erode(img,kernel,iterations=1)
-#	img = cv2.dilate(img,kernel,iterations=2)
-	
-
-#	cv2.imshow(f,img)
-#	cv2.waitKey(0)
-#	cv2.destroyAllWindows()
 
 	if image is not None:
 		gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -82,42 +61,13 @@ for f in files:
 		print("error reading " + f)					
 
 
-def match_rects( rects_a_param, rects_b_param , min_match=0.5):
-	rects_a = list(rects_a_param)
-	rects_b = list(rects_b_param)
-	matches = 0
-
-	for rect in rects_a:
-		match = [0];
-		for rect_comp in rects_b:
-			curr_match_x = rect[0]/rect_comp[0] if rect_comp[0] > rect[0] else rect_comp[0]/rect[0]
-			curr_match_y = rect[1]/rect_comp[1] if rect_comp[1] > rect[1] else rect_comp[1]/rect[1]
-			if (curr_match_y * curr_match_x) > match[0]:
-				match = [curr_match_y * curr_match_x, rect_comp]
-
-		if match > min_match:
-			rects_a.remove(rect)
-			rects_b.remove(match[1])
-			matches += 1
-
-	print(rects_a)
-	print(rects_b)
-	print(matches)
-
-
-
-
-
 
 for file, rect_list_a in rectangles.items():
 	for file2, rect_list_b in rectangles.items():
 		match_rects(rect_list_a, rect_list_b)
 
-
 print(rectangles)
 cv2.waitKey()
-
-
 
 
 
