@@ -10,6 +10,10 @@ import numpy as np
 import pickle
 from matplotlib import pyplot as plt
 
+from bound import bound, standardise_rectangles
+from categorise import categorise_histograms
+from edit import remove_lines
+
 CATEGORY_FILE = 'category.npy'
 
 MIN_CORRELATION = 0.09
@@ -21,102 +25,160 @@ histograms = {}
 
 categorised_hist = {}
 
+
+
+
+# NOTE: a categorisation is of the form { category : [file_name, file_name, file_name], ... }
+
+
+
+#dir_path = os.path.dirname(os.path.realpath(__file__))
+dir_path = "C:\\Unnamed\\scripts\\test_images\\"
+files = [f for f in listdir(dir_path) if f.endswith(".png")]
+
+rectangles = {}
+for f in files:
+	image = cv2.imread(dir_path + f);
+
+	image = remove_lines(image)
+	
+	#cv2.imshow(f,image)
+	#cv2.waitKey(0)
+#	img = cv2.bitwise_not(thresh)
+	#cv2.imshow(f,img)
+
+#	kernel = np.ones((1,1), np.uint8)
+
+#	img = cv2.erode(img,kernel,iterations=1)
+#	img = cv2.dilate(img,kernel,iterations=2)
+	
+
+#	cv2.imshow(f,img)
+#	cv2.waitKey(0)
+#	cv2.destroyAllWindows()
+
+	if image is not None:
+		gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+		ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
+
+		invert = cv2.bitwise_not(thresh)
+	#	print(invert)
+		#test = bound(invert)
+		#cv2.imshow(f,test)
+		#cv2.waitKey(0)
+		bounds = bound(invert, 10)
+		stand = standardise_rectangles(bounds)
+		for rect in stand:
+			print(rect)
+			image = cv2.rectangle(image,(0,0),(rect[0],rect[1]),(0,255,0),2)
+
+		rectangles[f] = bounds
+
+
+		cv2.imshow(f,image)
+		cv2.waitKey(0)
+		cv2.destroyAllWindows()
+	else:
+		print("error reading " + f)					
+
+
+def match_rects( rects_a_param, rects_b_param , min_match=0.5):
+	rects_a = list(rects_a_param)
+	rects_b = list(rects_b_param)
+	matches = 0
+
+	for rect in rects_a:
+		match = [0];
+		for rect_comp in rects_b:
+			curr_match_x = rect[0]/rect_comp[0] if rect_comp[0] > rect[0] else rect_comp[0]/rect[0]
+			curr_match_y = rect[1]/rect_comp[1] if rect_comp[1] > rect[1] else rect_comp[1]/rect[1]
+			if (curr_match_y * curr_match_x) > match[0]:
+				match = [curr_match_y * curr_match_x, rect_comp]
+
+		if match > min_match:
+			rects_a.remove(rect)
+			rects_b.remove(match[1])
+			matches += 1
+
+	print(rects_a)
+	print(rects_b)
+	print(matches)
+
+
+
+
+
+
+for file, rect_list_a in rectangles.items():
+	for file2, rect_list_b in rectangles.items():
+		match_rects(rect_list_a, rect_list_b)
+
+
+print(rectangles)
+cv2.waitKey()
+
+
+
+
+
+
 print(sys.argv)
 if(len(sys.argv) < 2):
 
-	#get current directory
-	dir_path = os.path.dirname(os.path.realpath(__file__))
-
-	templates = []
-
 	template_histograms = {}
-
-	for t in templates:
-		image = cv2.imread(t)
-		blur = cv2.blur(image,(10,10))
-		gray_image = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
-		template_histograms[t] = cv2.calcHist([gray_image],[0],None,[256],[0,256])
 
 	pth = os.getcwd()
 
 	files = [f for f in listdir(dir_path) if f.endswith(".png")]
 
-	#print(files)
+	print(files)
 
 
-	#categorise based on histogram
+	#categorise based on hist
 
-	run = 0
-	run = int(input("1 to run hist categorisation, any other key uses results from previous session "))
+	categorised_hist = categorise_histograms( files , directory=dir_path)
+	print(categorised_hist)
 
-
-	if run==1:
-		for f in files:
-			image = cv2.imread(f)
-			blur = cv2.blur(image,(10,10))
-			gray_image = cv2.cvtColor(blur, cv2.COLOR_RGB2GRAY)
-			hist = cv2.calcHist([gray_image],[0],None,[256],[0,256])
-
-			max_diff = ["",0]
-			for curr,h in template_histograms.items():
-				diff = cv2.compareHist(h, hist, COMPARE_METHOD)
-				if diff > max_diff[1]:
-					max_diff = [curr, diff]
-
-					
-			if max_diff[1] < MIN_CORRELATION:
-				template_histograms[f] = hist
-				categorised_hist[f] = [f]
-			else:
-				categorised_hist[max_diff[0]].append(f)
-
-
-		np.save(CATEGORY_FILE, categorised_hist)
-	else:
-	 	categorised_hist = np.load(CATEGORY_FILE).item()
+	#np.save(CATEGORY_FILE, categorised_hist)
 
 	#show histogram categories
 
-	run = 0
-	run = int(input("1 to view results, any other key skips... "))
+	for category, imglist in categorised_hist.items():
+		print(str(len(imglist)))
 
-	if run==1:
-		for category, imglist in categorised_hist.items():
-			print(str(len(imglist)))
+		count = 0
+		for i in imglist:
+			image = cv2.imread(dir_path + i)
+			cv2.imshow(i,image)
+			count += 1
+			if count%20 == 0:
+				cv2.waitKey(0)
+				cv2.destroyAllWindows()
+			if count > 100:
+				cv2.destroyAllWindows()
+				break
+		
+		cv2.waitKey(0)
 
-			count = 0
-			for i in imglist:
-				image = cv2.imread(i)
-				cv2.imshow(i,image)
-				count += 1
-				if count%20 == 0:
-					cv2.waitKey(0)
-					cv2.destroyAllWindows()
-				if count > 100:
-					cv2.destroyAllWindows()
-					break
-			
-			cv2.waitKey(0)
-
-			cv2.destroyAllWindows()
+		cv2.destroyAllWindows()
 
 
 
 	#new categorisation type!
 	run = 0
-	print("select subsection for further categorisation:")
-	for category, imglist in categorised_hist.items():
-		print(category + " : " + str(len(imglist)) + " items.")
+	# print("select subsection for further categorisation:")
+	# for category, imglist in categorised_hist.items():
+	# 	print(category + " : " + str(len(imglist)) + " items.")
 
 
-	#select category to perform further filtering on
-	while True:
-		try:
-			category = input("enter category :")
-			subcategory = categorised_hist[category]
-			break
-		except:
-			print("not a valid category")
+	# #select category to perform further filtering on
+	# while True:
+	# 	try:
+	# 		category = input("enter category :")
+	# 		subcategory = categorised_hist[category]
+	# 		break
+	# 	except:
+	# 		print("not a valid category")
 
 else:
 	categorised_hist = np.load(CATEGORY_FILE).item()
@@ -124,53 +186,5 @@ else:
 	subcategory = categorised_hist[category]
 
 
-for f in subcategory:
-	image = cv2.imread(f);
-	gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-	ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
+#for f in subcategory:
 
-	invert = cv2.bitwise_not(thresh)
-	print(invert)
-
-	canny = cv2.Canny(gray_image,50,150,apertureSize = 3)
-	cv2.imshow(f,canny)
-	minLineLength = 1
-	maxLineGap = 20
-	lines = cv2.HoughLinesP(invert,1,np.pi/180,100,minLineLength,maxLineGap)
-
-	print(lines)
-	cv2.waitKey(0)
-	if lines is not None:
-		for [line] in lines:
-			cv2.line(image,(line[0],line[1]),(line[2],line[3]),(255,255,255),2)
-	
-	cv2.imshow(f,image)
-
-	img = cv2.bitwise_not(thresh)
-	#cv2.imshow(f,img)
-
-	kernel = np.ones((1,1), np.uint8)
-
-	img = cv2.erode(img,kernel,iterations=1)
-	img = cv2.dilate(img,kernel,iterations=2)
-	
-
-	#cv2.imshow(f,img)
-	cv2.waitKey(0)
-	cv2.destroyAllWindows()
-
-	hist = cv2.calcHist([image], [0, 1, 2], None, [8, 8, 8],
-		[0, 256, 0, 256, 0, 256])
-	histograms[f] = hist
-
-def bound( img ):
-	rectangles = []
-
-	cur_rectangle = []
-	for row_index,row in enumerate(img):
-		for column_index,pixel in enumerate(row):
-			if img[row_index][column_index]:
-				curr_rectangle = [[row_index, column_index]]
-
-				for row_offset,row in enumerate(img[row_index:-1]):
-					

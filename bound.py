@@ -48,6 +48,12 @@ def expand( rect , img , border):
 
 	return rect
 
+def is_in( rect, img ):
+	return rect[0] < len(img[0]) and rect[1] < len(img) and rect[2] < len(img[0]) and rect[3] < len(img)
+
+#def expand1( rect, sum_img, border):
+
+
 def in_rect(point, rect):
 	px,py = point
 	rx1,ry1,rx2,ry2 = rect
@@ -60,24 +66,55 @@ def in_rects( point, rects):
 	return False
 
 
-# return rectangles surrounding areas on document
+def sum_areas( img, border=3):
+
+	sum_mat = np.full((len(img),len(img[0])), 0, dtype= int)
+
+	for y, row in enumerate(img):
+		for x, pixel in enumerate(row):
+			if y:
+				if pixel:
+					sum_mat[y][x] = sum_mat[y-1][x] + 1
+				else:
+					sum_mat[y][x] = sum_mat[y-1][x]
+			else:
+				if pixel: sum_mat[y][x] = 1
+		#print(sum_mat[y])
+
+	for y, row in enumerate(sum_mat):
+		for x, pixel in enumerate(row):
+			if x:
+				sum_mat[y][x] = sum_mat[y][x-1] + sum_mat[y][x]
+
+	maxval = sum_mat[-1][-1]
+	print(maxval)
+	# for y, row in enumerate(sum_mat):
+	# 	for x, pixel in enumerate(row):
+	# 		sum_mat[y][x] = int((float(sum_mat[y][x]) / float(maxval)) * 255)
+
+	return sum_mat
+
+# return rectangles surrounding foreground areas on document : requires foreground True, background False
 def bound( img , border=3):
+
 	rectangles = []
 
 	cur_rectangle = []
+	#sum_img = sum_areas(img)
 
 	for y, row in enumerate(img):
 		for x, pixel in enumerate(row):
 			if pixel and not in_rects((x,y),rectangles):
 				cur_rectangle = [x,y,x,y]
-
 				#print("found corner! ", x,y)
 				while True:
 					new_rect = expand( cur_rectangle, img, border)
+
+					# new_rect = expand( cur_rectangle, img, border)
 					if cur_rectangle == new_rect:
 						break
 					else:
-						cur_rectangle = new_rect
+						cur_rectangle = list(new_rect)
 
 				x1,y1,x2,y2 = cur_rectangle
 
@@ -87,34 +124,12 @@ def bound( img , border=3):
 	return rectangles
 
 
+def standardise_rectangles( rectangles ):
+	print(rectangles)
+	simp_rect = []
 
+	for rect in rectangles:
+		simp_rect.append([rect[2] - rect[0], rect[3] - rect[1]])
 
-#dir_path = os.path.dirname(os.path.realpath(__file__))
-dir_path = "C:\\Unnamed\\scripts\\test_images\\"
-files = [f for f in listdir(dir_path) if f.endswith(".png")]
-
-
-
-for f in files:
-	image = cv2.imread(dir_path + f);
-	if image is not None:
-		gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-		ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
-
-		invert = cv2.bitwise_not(thresh)
-	#	print(invert)
-
-		bounds = bound(invert, 10)
-		for rect in bounds:
-			image = cv2.rectangle(image,(rect[0],rect[1]),(rect[2],rect[3]),(0,255,0),2)
-
-		cv2.imshow(f,image)
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
-	else:
-		print("error reading " + f)
-
-
-
-#for rect in bounds:
-#	invert = cv2.rectangle(invert,)
+	print(simp_rect)
+	return sorted(simp_rect)
