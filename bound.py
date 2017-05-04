@@ -104,9 +104,9 @@ def show_sum( sum_img, window_name):
 		for x in range(0,len(sum_mat[0])):
 			sum_mat[y][x] = int((float(sum_mat[y][x]) / float(maxval)) * 255)
 	print(sum_mat)
-	cv2.imshow(window_name,sum_mat)
+	cv2.imshow(window_name,sum_mat.astype(np.ubyte))
 	cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	#cv2.destroyAllWindows()
 
 
 def sum_rect( rect, sum_img):
@@ -135,13 +135,13 @@ def sum_expand(rect, sum_img, border=10):
 def sum_bound( img, border=3, min_size=50):
 
 	sum_img = sum_areas(img)
-	#print(sum_img)
-	rectangles = []
+	show_sum(sum_img, "sum")
 
 	for x in range(1,len(sum_img)):
 		for y in range(1,len(sum_img[0])):
 			if img[x][y] and not in_rects((x,y),rectangles):
-				#print("new rectangle at ", x, " ", y)
+				print("new rectangle at ", x, " ", y)
+				
 				rect = [x,y,x,y]
 				while True:
 					#print(rect)
