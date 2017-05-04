@@ -10,8 +10,8 @@ import numpy as np
 import pickle
 from matplotlib import pyplot as plt
 
-from bound import bound, standardise_rectangles
-from categorise import categorise_histograms
+from bound import bound, standardise_rectangles, sum_bound
+from categorise import categorise_histograms, match_rects_jaccard, categorise_rects
 from edit import remove_lines
 
 CATEGORY_FILE = 'category.npy'
@@ -30,44 +30,102 @@ categorised_hist = {}
 dir_path = "C:\\Unnamed\\scripts\\test_images\\"
 files = [f for f in listdir(dir_path) if f.endswith(".png")]
 
+
+image = cv2.imread(dir_path + files[3]);
+gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
+
+invert = cv2.bitwise_not(thresh)
+
+print(sum_bound(invert))
+
+
+categorised_rect = categorise_rects( files , directory=dir_path, save_file="rects.npy")
+
+
+
+for category, imglist in categorised_rect.items():
+	print(str(len(imglist)))
+
+	count = 0
+	for i in imglist:
+		image = cv2.imread(dir_path + i)
+		cv2.imshow(i,image)
+		count += 1
+		if count%20 == 0:
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
+		if count > 100:
+			cv2.destroyAllWindows()
+			break
+	
+	cv2.waitKey(0)
+
+	cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 rectangles = {}
-for f in files:
-	image = cv2.imread(dir_path + f);
-
-	image = remove_lines(image)
-
-	if image is not None:
-		gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-		ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
-
-		invert = cv2.bitwise_not(thresh)
-	#	print(invert)
-		#test = bound(invert)
-		#cv2.imshow(f,test)
-		#cv2.waitKey(0)
-		bounds = bound(invert, 10)
-		stand = standardise_rectangles(bounds)
-		for rect in stand:
-			print(rect)
-			image = cv2.rectangle(image,(0,0),(rect[0],rect[1]),(0,255,0),2)
-
-		rectangles[f] = bounds
 
 
-		cv2.imshow(f,image)
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
-	else:
-		print("error reading " + f)					
+
+if True:
+	for f in files:
+		image = cv2.imread(dir_path + f);
+
+		image = remove_lines(image)
+
+		if image is not None:
+			gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+			ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
+
+			invert = cv2.bitwise_not(thresh)
+		#	print(invert)
+			#test = bound(invert)
+			#cv2.imshow(f,test)
+			#cv2.waitKey(0)
+			bounds = bound(invert, 10)
+			stand = standardise_rectangles(bounds)
+			for rect in stand:
+				print(rect)
+				image = cv2.rectangle(image,(0,0),(rect[0],rect[1]),(0,255,0),2)
+
+			rectangles[f] = stand
 
 
+	#		cv2.imshow(f,image)
+	#		cv2.waitKey(0)
+	#		cv2.destroyAllWindows()
+		else:
+			print("error reading " + f)					
+
+	np.save(dir_path + "rectangles.npy", rectangles)
+else:
+	rectangles = np.load(dir_path + "rectangles.npy")
 
 for file, rect_list_a in rectangles.items():
 	for file2, rect_list_b in rectangles.items():
-		match_rects(rect_list_a, rect_list_b)
+		if file != file2:
+			cv2.imshow(file, cv2.imread(dir_path+file))
+			cv2.imshow(file2, cv2.imread(dir_path+file2))
+			print(match_rects_jaccard(rect_list_a, rect_list_b))
+			cv2.waitKey(0)
+			cv2.destroyAllWindows()
+cv2.waitKey(0)
 
 print(rectangles)
-cv2.waitKey()
+cv2.waitKey(0)
 
 
 

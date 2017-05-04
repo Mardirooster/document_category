@@ -6,11 +6,11 @@ from os.path import isfile, join
 #opencv imports
 import cv2
 import numpy as np
+import copy
 
 import pickle
 from matplotlib import pyplot as plt
 
-min_size = 5
 
 def expand( rect , img , border):
 	x1,y1,x2,y2 = rect
@@ -94,8 +94,80 @@ def sum_areas( img, border=3):
 
 	return sum_mat
 
+
+
+def show_sum( sum_img, window_name):
+	sum_mat = copy.deepcopy(sum_img)
+	print(sum_mat)
+	maxval = sum_mat[-1][-1]
+	for y in range(0,len(sum_mat)):
+		for x in range(0,len(sum_mat[0])):
+			sum_mat[y][x] = int((float(sum_mat[y][x]) / float(maxval)) * 255)
+	print(sum_mat)
+	cv2.imshow(window_name,sum_mat)
+	cv2.waitKey(0)
+	cv2.destroyAllWindows()
+
+
+def sum_rect( rect, sum_img):
+	#print(rect)
+	#print(sum_img)
+	x1,y1,x2,y2 = rect
+	if x2 >= len(sum_img): x2 = len(sum_img)-1
+	if y2 >= len(sum_img[0]): y2 = len(sum_img[0])-1
+	return sum_img[x2][y2] + sum_img[x1-1][y1-1] - sum_img[x1-1][y2] - sum_img[x2][y1-1]
+
+def sum_expand(rect, sum_img, border=10):
+	x1,y1,x2,y2 = rect
+	#print(sum_rect([x1,y1,x2+border,y2], sum_img))
+	#print(sum_rect([x1,y1,x2,y2], sum_img))
+	if sum_rect([x1,y1,x2+border,y2], sum_img) > sum_rect([x1,y1,x2,y2], sum_img):
+		return [x1,y1,x2+border,y2]
+
+	if sum_rect([x1,y1,x2,y2+border], sum_img) > sum_rect([x1,y1,x2,y2], sum_img):
+		return [x1,y1,x2,y2+border]
+
+	return rect
+
+
+
+#sum bound
+def sum_bound( img, border=3, min_size=50):
+
+	sum_img = sum_areas(img)
+	#print(sum_img)
+	rectangles = []
+
+	for x in range(1,len(sum_img)):
+		for y in range(1,len(sum_img[0])):
+			if img[x][y] and not in_rects((x,y),rectangles):
+				#print("new rectangle at ", x, " ", y)
+				rect = [x,y,x,y]
+				while True:
+					#print(rect)
+					expanded_rect = sum_expand(rect, sum_img)
+					#print("exp rectangle at ", expanded_rect)
+					cv2.waitKey(0)
+					if expanded_rect == rect: break
+					rect = expanded_rect
+
+				x1,y1,x2,y2 = expanded_rect
+
+				if (x2-x1 > min_size) and (y2-y1 > min_size):
+					rectangles.append(expanded_rect)
+					print(expanded_rect)
+
+	return rectangles
+
+
+
+
+
+
+
+
 # return rectangles surrounding foreground areas on document : requires foreground True, background False
-def bound( img , border=3):
+def bound( img , border=3, min_size=5):
 
 	rectangles = []
 
