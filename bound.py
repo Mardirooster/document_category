@@ -115,17 +115,27 @@ def sum_rect( rect, sum_img):
 	x1,y1,x2,y2 = rect
 	if x2 >= len(sum_img): x2 = len(sum_img)-1
 	if y2 >= len(sum_img[0]): y2 = len(sum_img[0])-1
-	return sum_img[x2][y2] + sum_img[x1-1][y1-1] - sum_img[x1-1][y2] - sum_img[x2][y1-1]
+	return sum_img[x2][y2] + sum_img[x1][y1] - sum_img[x1][y2] - sum_img[x2][y1]
 
-def sum_expand(rect, sum_img, border=10):
+def sum_expand(rect, sum_img, border=5):
 	x1,y1,x2,y2 = rect
 	#print(sum_rect([x1,y1,x2+border,y2], sum_img))
 	#print(sum_rect([x1,y1,x2,y2], sum_img))
-	if sum_rect([x1,y1,x2+border,y2], sum_img) > sum_rect([x1,y1,x2,y2], sum_img):
-		return [x1,y1,x2+border,y2]
+	if y2+border < len(sum_img[0]):
+		if sum_img[x2][y2] < sum_img[x2][y2+border]:
+			return [x1,y1,x2,y2+border]
 
-	if sum_rect([x1,y1,x2,y2+border], sum_img) > sum_rect([x1,y1,x2,y2], sum_img):
-		return [x1,y1,x2,y2+border]
+	if x2+border < len(sum_img):
+		if sum_img[x2][y2] < sum_img[x2+border][y2]:
+			return [x1,y1,x2+border,y2]
+
+	if x1-border > 0:
+		if sum_rect(rect, sum_img) < sum_rect([x1-border,y1,x2,y2], sum_img):
+			return [x1-border,y1,x2,y2]
+
+	if y1-border > 0:
+		if sum_rect(rect, sum_img) < sum_rect([x1,y1-border,x2,y2], sum_img):
+			return [x1,y1-border,x2,y2]	
 
 	return rect
 
@@ -133,29 +143,31 @@ def sum_expand(rect, sum_img, border=10):
 
 #sum bound
 def sum_bound( img, border=3, min_size=50):
-
+	rectangles = []
 	sum_img = sum_areas(img)
 	show_sum(sum_img, "sum")
 
 	for x in range(1,len(sum_img)):
 		for y in range(1,len(sum_img[0])):
 			if img[x][y] and not in_rects((x,y),rectangles):
-				print("new rectangle at ", x, " ", y)
+				#print("new rectangle at ", x, " ", y)
 				
 				rect = [x,y,x,y]
 				while True:
 					#print(rect)
 					expanded_rect = sum_expand(rect, sum_img)
 					#print("exp rectangle at ", expanded_rect)
-					cv2.waitKey(0)
+					#cv2.waitKey(0)
 					if expanded_rect == rect: break
 					rect = expanded_rect
 
 				x1,y1,x2,y2 = expanded_rect
+				#print("new rectangle at ", expanded_rect)
+
 
 				if (x2-x1 > min_size) and (y2-y1 > min_size):
 					rectangles.append(expanded_rect)
-					print(expanded_rect)
+					#print(expanded_rect)
 
 	return rectangles
 
