@@ -30,23 +30,6 @@ categorised_hist = {}
 dir_path = "C:\\Unnamed\\scripts\\test_images\\"
 files = [f for f in listdir(dir_path) if f.endswith(".png")]
 
-
-image = remove_lines(cv2.imread(dir_path + files[3]));
-gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
-
-invert = cv2.bitwise_not(thresh)
-
-rects = sum_bound(invert)
-
-for rect in rects:
-	print(rect)
-	image = cv2.rectangle(image,(rect[1],rect[0]),(rect[3],rect[2]),(0,255,0),2)
-
-cv2.imshow("i",image)
-cv2.waitKey(0)
-
-
 categorised_rect = categorise_rects( files , directory=dir_path, save_file="rects.npy")
 
 
@@ -78,58 +61,6 @@ for category, imglist in categorised_rect.items():
 
 
 
-
-
-
-
-
-rectangles = {}
-
-
-
-if True:
-	for f in files:
-		image = cv2.imread(dir_path + f);
-
-		image = remove_lines(image)
-
-		if image is not None:
-			gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-			ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
-
-			invert = cv2.bitwise_not(thresh)
-		#	print(invert)
-			#test = bound(invert)
-			#cv2.imshow(f,test)
-			#cv2.waitKey(0)
-			bounds = bound(invert, 10)
-			stand = standardise_rectangles(bounds)
-			for rect in stand:
-				print(rect)
-				image = cv2.rectangle(image,(0,0),(rect[0],rect[1]),(0,255,0),2)
-
-			rectangles[f] = stand
-
-
-	#		cv2.imshow(f,image)
-	#		cv2.waitKey(0)
-	#		cv2.destroyAllWindows()
-		else:
-			print("error reading " + f)					
-
-	np.save(dir_path + "rectangles.npy", rectangles)
-else:
-	rectangles = np.load(dir_path + "rectangles.npy")
-
-for file, rect_list_a in rectangles.items():
-	for file2, rect_list_b in rectangles.items():
-		if file != file2:
-			cv2.imshow(file, cv2.imread(dir_path+file))
-			cv2.imshow(file2, cv2.imread(dir_path+file2))
-			print(match_rects_jaccard(rect_list_a, rect_list_b))
-			cv2.waitKey(0)
-			cv2.destroyAllWindows()
-cv2.waitKey(0)
 
 print(rectangles)
 cv2.waitKey(0)

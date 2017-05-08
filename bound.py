@@ -66,6 +66,14 @@ def in_rects( point, rects):
 	return False
 
 
+def is_sub_rect(rect, rects, border=5):
+	for curr_rect in rects:
+		if in_rect([rect[0]+border, rect[1]+border], curr_rect) and in_rect([rect[2]-border, rect[3]-border], curr_rect):
+			return True
+		if in_rect([curr_rect[0]+border, curr_rect[1]+border], rect) and in_rect([curr_rect[2]-border, curr_rect[3]-border], rect):
+			return True
+	return False
+
 def sum_areas( img, border=3):
 
 	sum_mat = np.full((len(img),len(img[0])), 0, dtype= int)
@@ -105,7 +113,7 @@ def show_sum( sum_img, window_name):
 			sum_mat[y][x] = int((float(sum_mat[y][x]) / float(maxval)) * 255)
 	print(sum_mat)
 	cv2.imshow(window_name,sum_mat.astype(np.ubyte))
-	cv2.waitKey(0)
+	#cv2.waitKey(0)
 	#cv2.destroyAllWindows()
 
 
@@ -117,21 +125,23 @@ def sum_rect( rect, sum_img):
 	if y2 >= len(sum_img[0]): y2 = len(sum_img[0])-1
 	return sum_img[x2][y2] + sum_img[x1][y1] - sum_img[x1][y2] - sum_img[x2][y1]
 
-def sum_expand(rect, sum_img, border=5):
+
+
+def sum_expand(rect, sum_img, border=5, min_diff=4):
 	x1,y1,x2,y2 = rect
 	#print(sum_rect([x1,y1,x2+border,y2], sum_img))
 	#print(sum_rect([x1,y1,x2,y2], sum_img))
 	if y2+border < len(sum_img[0]):
-		if sum_img[x2][y2] < sum_img[x2][y2+border]:
+		if (sum_img[x2][y2]-sum_img[x1-1][y2]) < (sum_img[x2][y2+border]-sum_img[x1-1][y2+border]):
 			return [x1,y1,x2,y2+border]
 
 	if x2+border < len(sum_img):
-		if sum_img[x2][y2] < sum_img[x2+border][y2]:
+		if sum_img[x2][y2]-sum_img[x2][y1] < sum_img[x2+border][y2]-sum_img[x2+border][y1]:
 			return [x1,y1,x2+border,y2]
 
-	if x1-border > 0:
-		if sum_rect(rect, sum_img) < sum_rect([x1-border,y1,x2,y2], sum_img):
-			return [x1-border,y1,x2,y2]
+	# if x1-border > 0:
+	# 	if sum_rect(rect, sum_img) < sum_rect([x1-border,y1,x2,y2], sum_img):
+	# 		return [x1-border,y1,x2,y2]
 
 	if y1-border > 0:
 		if sum_rect(rect, sum_img) < sum_rect([x1,y1-border,x2,y2], sum_img):
@@ -139,13 +149,16 @@ def sum_expand(rect, sum_img, border=5):
 
 	return rect
 
-
+def rect_density(rect, sum_img):
+	x1,y1,x2,y2 = rect
+	area = (y2-y1+1) * (x2-x1+1)
+	return sum_rect(rect,sum_img)/area
 
 #sum bound
-def sum_bound( img, border=3, min_size=50):
+def sum_bound( img, border=5, min_size=5):
 	rectangles = []
 	sum_img = sum_areas(img)
-	show_sum(sum_img, "sum")
+	#show_sum(sum_img, "sum")
 
 	for x in range(1,len(sum_img)):
 		for y in range(1,len(sum_img[0])):
@@ -155,7 +168,7 @@ def sum_bound( img, border=3, min_size=50):
 				rect = [x,y,x,y]
 				while True:
 					#print(rect)
-					expanded_rect = sum_expand(rect, sum_img)
+					expanded_rect = sum_expand(rect, sum_img, border)
 					#print("exp rectangle at ", expanded_rect)
 					#cv2.waitKey(0)
 					if expanded_rect == rect: break
@@ -164,10 +177,10 @@ def sum_bound( img, border=3, min_size=50):
 				x1,y1,x2,y2 = expanded_rect
 				#print("new rectangle at ", expanded_rect)
 
-
 				if (x2-x1 > min_size) and (y2-y1 > min_size):
-					rectangles.append(expanded_rect)
-					#print(expanded_rect)
+					if not is_sub_rect(expanded_rect, rectangles):
+						rectangles.append(expanded_rect)
+						#print(expanded_rect)
 
 	return rectangles
 

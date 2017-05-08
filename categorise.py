@@ -5,7 +5,7 @@ import numpy as np
 import sys
 import os
 from edit import remove_lines
-from bound import bound, standardise_rectangles
+from bound import bound, standardise_rectangles, sum_bound
 
 def categorise_histograms( files , correlation=0.09 , compare_method=cv2.HISTCMP_CORREL, directory=".\\", save_file = "", load_file = ""):
 
@@ -42,8 +42,7 @@ def categorise_histograms( files , correlation=0.09 , compare_method=cv2.HISTCMP
 
 
 
-def match_rects_jaccard( rects_a_param, rects_b_param , min_match_ratio=0.5, min_number_of_matches_ratio=0.5):
-	print("hi")
+def match_rects_jaccard( rects_a_param, rects_b_param , min_match_ratio=0.3, min_number_of_matches_ratio=0.8):
 	rects_a = list(rects_a_param)
 	rects_b = list(rects_b_param)
 	matches = 0
@@ -71,6 +70,22 @@ def match_rects_jaccard( rects_a_param, rects_b_param , min_match_ratio=0.5, min
 
 	print(matches/union)
 	return matches/union
+
+
+def match_rects_contains( rects_a_param, rects_b_param, min_number_of_matches=2):
+	rects_a = list(rects_a_param)
+	rects_b = list(rects_b_param)
+	matches = 0
+	for rect in rects_a:
+		match = [0]
+		for rect_comp in rects_b:
+			#print(rect)
+			#print(rect_comp)
+			curr_match_x = rect[0]/rect_comp[0] if rect_comp[0] > rect[0] else rect_comp[0]/rect[0]
+			curr_match_y = rect[1]/rect_comp[1] if rect_comp[1] > rect[1] else rect_comp[1]/rect[1]
+			if (curr_match_y * curr_match_x) > match[0]:
+				match = [curr_match_y * curr_match_x, rect_comp]
+
 	
 def categorise_rects( files , correlation=0.5, directory=".\\", save_file = "", load_file = ""):
 
@@ -88,7 +103,7 @@ def categorise_rects( files , correlation=0.5, directory=".\\", save_file = "", 
 				ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
 
 				invert = cv2.bitwise_not(thresh)
-				bounds = bound(invert, 10, 20)
+				bounds = sum_bound(invert, 10, 20)
 				stand = standardise_rectangles(bounds)
 				rectangles[f] = stand
 	else:
@@ -101,7 +116,7 @@ def categorise_rects( files , correlation=0.5, directory=".\\", save_file = "", 
 		max_corr = ["",0]
 
 		for category, template in template_rectangles.items():
-			match = match_rects_jaccard(rect_list_a, template)
+			match = match_rects_jaccard(curr_rect, template)
 			if match > max_corr[1]:
 				max_corr = [category,match]
 

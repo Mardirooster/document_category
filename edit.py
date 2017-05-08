@@ -21,3 +21,5 @@ def remove_lines( image ):
 			cv2.line(image,(line[0],line[1]),(line[2],line[3]),(255,255,255),2)
 
 	return image
+
+
