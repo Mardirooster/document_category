@@ -30,6 +30,24 @@ categorised_hist = {}
 dir_path = "C:\\Unnamed\\scripts\\test_images\\"
 files = [f for f in listdir(dir_path) if f.endswith(".png")]
 
+
+
+# TEMPLATE GENERATION
+
+templates = []
+
+for f in files:
+	image = cv2.imread(dir_path + f)
+
+	cv2.imshow(f,image)
+
+	print("Is this a template? (y/n)")
+	k = cv2.waitKey(0)
+	if k == 121:
+		templates.append(f)
+
+print(templates)
+
 categorised_rect = categorise_rects( files , directory=dir_path, save_file="rects.npy")
 
 
