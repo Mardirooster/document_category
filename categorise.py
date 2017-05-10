@@ -72,10 +72,11 @@ def match_rects_jaccard( rects_a_param, rects_b_param , min_match_ratio=0.3, min
 	return matches/union
 
 
-def match_rects_contains( rects_a_param, rects_b_param, min_number_of_matches=2):
+def rects_union( rects_a_param, rects_b_param, min_number_of_matches=2, min_number_of_matches_ratio=0.8):
 	rects_a = list(rects_a_param)
 	rects_b = list(rects_b_param)
-	matches = 0
+
+	union = []
 	for rect in rects_a:
 		match = [0]
 		for rect_comp in rects_b:
@@ -86,52 +87,85 @@ def match_rects_contains( rects_a_param, rects_b_param, min_number_of_matches=2)
 			if (curr_match_y * curr_match_x) > match[0]:
 				match = [curr_match_y * curr_match_x, rect_comp]
 
-	
-def categorise_rects( files , correlation=0.5, directory=".\\", save_file = "", load_file = ""):
-
-	rectangles = {}
-	categorised_rectangles = {}
-	template_rectangles = {}
-	if not load_file:
-		for f in files:
-			image = cv2.imread(directory + f);
-
-			image = remove_lines(image)
-
-			if image is not None:
-				gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-				ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
-
-				invert = cv2.bitwise_not(thresh)
-				bounds = sum_bound(invert, 10, 20)
-				stand = standardise_rectangles(bounds)
-				rectangles[f] = stand
-	else:
-		rectangles = np.load(directory + load_file)
-
-	if save_file:
-		np.save(directory + save_file, rectangles)
-
-	for file, curr_rect in rectangles.items():
-		max_corr = ["",0]
-
-		for category, template in template_rectangles.items():
-			match = match_rects_jaccard(curr_rect, template)
-			if match > max_corr[1]:
-				max_corr = [category,match]
-
-		if max_corr[1] > correlation:
-			categorised_rectangles[max_corr[0]].append(file)
+		if match[0] > min_number_of_matches_ratio:
+			union.append(match[1])
+			rects_b.remove(match[1])
 		else:
-			categorised_rectangles[file] = [file]
-			template_rectangles[file] = curr_rect
+			union.append(rect)
 
-	return categorised_rectangles
+	union += rects_b
+	return union
 
 
-				#cv2.imshow(file, cv2.imread(dir_path+file))
-				#cv2.imshow(file2, cv2.imread(dir_path+file2))
-				#print(match_rects_jaccard(rect_list_a, rect_list_b))
-				#cv2.waitKey(0)
-				#cv2.destroyAllWindows()
-	#cv2.waitKey(0)
+
+def match_rects_custom( rects_a_param, rects_b_param ):
+
+	rects_a = list(rects_a_param)
+	rects_b = list(rects_b_param)
+
+	
+	
+# def categorise_rects( files , correlation=0.5, directory=".\\", save_file = "", load_file = ""):
+
+# 	rectangles = {}
+# 	categorised_rectangles = {}
+# 	template_rectangles = {}
+# 	if not load_file:
+# 		for f in files:
+# 			image = cv2.imread(directory + f);
+
+# 			image = remove_lines(image)
+
+# 			if image is not None:
+# 				gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+# 				ret,thresh = cv2.threshold(gray_image,127,255,cv2.THRESH_BINARY)
+
+# 				invert = cv2.bitwise_not(thresh)
+# 				bounds = sum_bound(invert, 10, 20)
+# 				stand = standardise_rectangles(bounds)
+# 				rectangles[f] = stand
+# 	else:
+# 		rectangles = np.load(directory + load_file)
+
+# 	if save_file:
+# 		np.save(directory + save_file, rectangles)
+
+# 	for file, curr_rect in rectangles.items():
+# 		max_corr = ["",0]
+		
+
+
+# 		for category, template in template_rectangles.items():
+			
+# 			match = match_rects_jaccard(curr_rect, template)
+# 			if match > max_corr[1]:
+# 				max_corr = [category,match]
+
+# 		if max_corr[1] > correlation:
+# 			categorised_rectangles[max_corr[0]].append(file)
+# 			union = rects_union(curr_rect,template)
+# 			template_rectangles[max_corr[0]] = 
+
+
+
+
+# 		# for category, template in template_rectangles.items():
+# 		# 	match = match_rects_jaccard(curr_rect, template)
+# 		# 	if match > max_corr[1]:
+# 		# 		max_corr = [category,match]
+
+# 		# if max_corr[1] > correlation:
+# 		# 	categorised_rectangles[max_corr[0]].append(file)
+# 		# else:
+# 		# 	categorised_rectangles[file] = [file]
+# 		# 	template_rectangles[file] = curr_rect
+
+# 	return categorised_rectangles
+
+
+# # 				#cv2.imshow(file, cv2.imread(dir_path+file))
+# # 				#cv2.imshow(file2, cv2.imread(dir_path+file2))
+# # 				#print(match_rects_jaccard(rect_list_a, rect_list_b))
+# # 				#cv2.waitKey(0)
+# # 				#cv2.destroyAllWindows()
+# # 	#cv2.waitKey(0)
